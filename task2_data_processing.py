@@ -1,0 +1,416 @@
+{
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/priyanka1994-as/git-basics-demo/blob/main/task2_data_processing.py\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "1 — Make the API Calls"
+      ],
+      "metadata": {
+        "id": "19rTZ-tixF_I"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "2TbJIIc0iEWS",
+        "outputId": "601de014-5f32-4c31-e300-f9a8102a634e"
+      },
+      "outputs": [
+        {
+          "name": "stdout",
+          "output_type": "stream",
+          "text": [
+            "Fetched 500 story IDs\n",
+            "\n",
+            "Processing category: technology\n",
+            "\n",
+            "Processing category: worldnews\n",
+            "\n",
+            "Processing category: sports\n",
+            "\n",
+            "Processing category: science\n",
+            "\n",
+            "Processing category: entertainment\n",
+            "\n",
+            "Total collected stories: 218\n"
+          ]
+        }
+      ],
+      "source": [
+        "import requests\n",
+        "import time\n",
+        "\n",
+        "# URLs\n",
+        "TOP_STORIES_URL = \"https://hacker-news.firebaseio.com/v0/topstories.json\"\n",
+        "ITEM_URL = \"https://hacker-news.firebaseio.com/v0/item/{}.json\"\n",
+        "\n",
+        "headers = {\"User-Agent\": \"TrendPulse/1.0\"}\n",
+        "\n",
+        "# Categories with keywords\n",
+        "categories = {\n",
+        "    \"technology\": [\"ai\", \"software\", \"tech\", \"code\", \"computer\", \"data\", \"cloud\", \"api\", \"gpu\", \"llm\"],\n",
+        "    \"worldnews\": [\"war\", \"government\", \"country\", \"president\", \"election\", \"climate\", \"attack\", \"global\"],\n",
+        "    \"sports\": [\"nfl\", \"nba\", \"fifa\", \"sport\", \"game\", \"team\", \"player\", \"league\", \"championship\"],\n",
+        "    \"science\": [\"research\", \"study\", \"space\", \"physics\", \"biology\", \"discovery\", \"nasa\", \"genome\"],\n",
+        "    \"entertainment\": [\"movie\", \"film\", \"music\", \"netflix\", \"game\", \"book\", \"show\", \"award\", \"streaming\"]\n",
+        "}\n",
+        "\n",
+        "# Function to match category\n",
+        "def get_category(title):\n",
+        "    title = title.lower()\n",
+        "    for category, keywords in categories.items():\n",
+        "        for keyword in keywords:\n",
+        "            if keyword in title:\n",
+        "                return category\n",
+        "    return None\n",
+        "\n",
+        "\n",
+        "# Step 1: Fetch top story IDs\n",
+        "try:\n",
+        "    response = requests.get(TOP_STORIES_URL, headers=headers)\n",
+        "    response.raise_for_status()\n",
+        "    story_ids = response.json()[:500]\n",
+        "except Exception as e:\n",
+        "    print(\"Failed to fetch top stories:\", e)\n",
+        "    story_ids = []\n",
+        "\n",
+        "print(f\"Fetched {len(story_ids)} story IDs\")\n",
+        "\n",
+        "# Step 2: Fetch stories category-wise\n",
+        "stories = []\n",
+        "\n",
+        "for category in categories.keys():\n",
+        "    print(f\"\\nProcessing category: {category}\")\n",
+        "\n",
+        "    for story_id in story_ids:\n",
+        "        try:\n",
+        "            res = requests.get(ITEM_URL.format(story_id), headers=headers)\n",
+        "            res.raise_for_status()\n",
+        "            story = res.json()\n",
+        "\n",
+        "            # Skip invalid stories\n",
+        "            if story is None or \"title\" not in story:\n",
+        "                continue\n",
+        "\n",
+        "            # Check category match\n",
+        "            if get_category(story[\"title\"]) == category:\n",
+        "                stories.append({\n",
+        "                    \"post_id\": story.get(\"id\"),\n",
+        "                    \"title\": story.get(\"title\"),\n",
+        "                    \"category\": category,\n",
+        "                    \"score\": story.get(\"score\", 0),\n",
+        "                    \"num_comments\": story.get(\"descendants\", 0)\n",
+        "                })\n",
+        "\n",
+        "        except Exception as e:\n",
+        "            print(f\"Error fetching story {story_id}: {e}\")\n",
+        "            continue\n",
+        "\n",
+        "    # ✅ Sleep AFTER each category loop\n",
+        "    time.sleep(2)\n",
+        "\n",
+        "print(f\"\\nTotal collected stories: {len(stories)}\")"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "2 — Extract the Fields"
+      ],
+      "metadata": {
+        "id": "RMtffHsOxA1P"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "colab": {
+          "background_save": true
+        },
+        "id": "JYvP1VCLnaz6",
+        "outputId": "89c3d4ad-cfe4-41b5-d805-0725b3949417"
+      },
+      "outputs": [
+        {
+          "name": "stdout",
+          "output_type": "stream",
+          "text": [
+            "\n",
+            "Processing technology...\n",
+            "Collected 25 stories for technology\n",
+            "\n",
+            "Processing worldnews...\n",
+            "Collected 11 stories for worldnews\n",
+            "\n",
+            "Processing sports...\n",
+            "Collected 8 stories for sports\n",
+            "\n",
+            "Processing science...\n",
+            "Collected 11 stories for science\n",
+            "\n",
+            "Processing entertainment...\n",
+            "Collected 25 stories for entertainment\n",
+            "\n",
+            "Total collected stories: 80\n"
+          ]
+        }
+      ],
+      "source": [
+        "import requests\n",
+        "import time\n",
+        "from datetime import datetime\n",
+        "\n",
+        "# URLs\n",
+        "TOP_STORIES_URL = \"https://hacker-news.firebaseio.com/v0/topstories.json\"\n",
+        "ITEM_URL = \"https://hacker-news.firebaseio.com/v0/item/{}.json\"\n",
+        "\n",
+        "headers = {\"User-Agent\": \"TrendPulse/1.0\"}\n",
+        "\n",
+        "# Categories\n",
+        "categories = {\n",
+        "    \"technology\": [\"ai\", \"software\", \"tech\", \"code\", \"computer\", \"data\", \"cloud\", \"api\", \"gpu\", \"llm\"],\n",
+        "    \"worldnews\": [\"war\", \"government\", \"country\", \"president\", \"election\", \"climate\", \"attack\", \"global\"],\n",
+        "    \"sports\": [\"nfl\", \"nba\", \"fifa\", \"sport\", \"game\", \"team\", \"player\", \"league\", \"championship\"],\n",
+        "    \"science\": [\"research\", \"study\", \"space\", \"physics\", \"biology\", \"discovery\", \"nasa\", \"genome\"],\n",
+        "    \"entertainment\": [\"movie\", \"film\", \"music\", \"netflix\", \"game\", \"book\", \"show\", \"award\", \"streaming\"]\n",
+        "}\n",
+        "\n",
+        "# Function to assign category\n",
+        "def get_category(title):\n",
+        "    title = title.lower()\n",
+        "    for category, keywords in categories.items():\n",
+        "        for keyword in keywords:\n",
+        "            if keyword in title:\n",
+        "                return category\n",
+        "    return None\n",
+        "\n",
+        "\n",
+        "# Fetch top IDs\n",
+        "response = requests.get(TOP_STORIES_URL, headers=headers)\n",
+        "story_ids = response.json()[:500]\n",
+        "\n",
+        "stories = []\n",
+        "\n",
+        "# Process category-wise\n",
+        "for category in categories.keys():\n",
+        "    print(f\"\\nProcessing {category}...\")\n",
+        "    count = 0\n",
+        "\n",
+        "    for story_id in story_ids:\n",
+        "        if count >= 25:  # ✅ limit per category\n",
+        "            break\n",
+        "\n",
+        "        try:\n",
+        "            res = requests.get(ITEM_URL.format(story_id), headers=headers)\n",
+        "            story = res.json()\n",
+        "\n",
+        "            if story is None or \"title\" not in story:\n",
+        "                continue\n",
+        "\n",
+        "            # Check category match\n",
+        "            if get_category(story[\"title\"]) == category:\n",
+        "\n",
+        "                stories.append({\n",
+        "                    \"post_id\": story.get(\"id\"),\n",
+        "                    \"title\": story.get(\"title\"),\n",
+        "                    \"category\": category,\n",
+        "                    \"score\": story.get(\"score\", 0),\n",
+        "                    \"num_comments\": story.get(\"descendants\", 0),\n",
+        "                    \"author\": story.get(\"by\", \"unknown\"),  # ✅ new field\n",
+        "                    \"collected_at\": datetime.now().strftime(\"%Y-%m-%d %H:%M:%S\")  # ✅ new field\n",
+        "                })\n",
+        "\n",
+        "                count += 1\n",
+        "\n",
+        "        except Exception as e:\n",
+        "            print(f\"Error fetching {story_id}: {e}\")\n",
+        "            continue\n",
+        "\n",
+        "    print(f\"Collected {count} stories for {category}\")\n",
+        "\n",
+        "    # ✅ sleep per category (important for marks)\n",
+        "    time.sleep(2)\n",
+        "\n",
+        "print(f\"\\nTotal collected stories: {len(stories)}\")"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "3 — Save to a JSON File"
+      ],
+      "metadata": {
+        "id": "kkVAm_Kiw4Ja"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "import os\n",
+        "import json\n",
+        "from datetime import datetime\n",
+        "\n",
+        "# Step 1: Create folder if it doesn't exist\n",
+        "folder_name = \"data\"\n",
+        "os.makedirs(folder_name, exist_ok=True)\n",
+        "\n",
+        "# Step 2: Create filename with date\n",
+        "date_str = datetime.now().strftime(\"%Y%m%d\")\n",
+        "file_path = f\"{folder_name}/trends_{date_str}.json\"\n",
+        "\n",
+        "# Step 3: Save to JSON file\n",
+        "with open(file_path, \"w\", encoding=\"utf-8\") as f:\n",
+        "    json.dump(stories, f, indent=4)\n",
+        "\n",
+        "# Step 4: Print total count\n",
+        "print(f\"\\nSaved {len(stories)} stories to {file_path}\")"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "RZISxKKmv_uN",
+        "outputId": "a045f815-de5e-44a4-bbad-2fe7d87ac96f"
+      },
+      "execution_count": 6,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "\n",
+            "Saved 80 stories to data/trends_20260406.json\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "1 — Load the JSON File"
+      ],
+      "metadata": {
+        "id": "7fCALtmTw2hl"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "import pandas as pd\n",
+        "\n",
+        "# Load JSON file\n",
+        "file_path = \"data/trends_20260406.json\"  # update filename if needed\n",
+        "df = pd.read_json(file_path)\n",
+        "\n",
+        "# Print number of rows\n",
+        "print(f\"Total rows loaded: {len(df)}\")"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "gJ8XFx3rwIi0",
+        "outputId": "54b1bae4-8f41-4e90-96bc-3f0d1decbafd"
+      },
+      "execution_count": 7,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Total rows loaded: 80\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "import pandas as pd\n",
+        "\n",
+        "# Load file\n",
+        "df = pd.read_json(\"data/trends_20260406.json\")\n",
+        "\n",
+        "print(\"Before Cleaning:\", df.shape)\n",
+        "\n",
+        "# 1️⃣ Remove duplicates (based on post_id)\n",
+        "df = df.drop_duplicates(subset=\"post_id\")\n",
+        "\n",
+        "# 2️⃣ Handle missing values (drop important missing fields)\n",
+        "df = df.dropna(subset=[\"post_id\", \"title\", \"score\"])\n",
+        "\n",
+        "# 3️⃣ Fix data types\n",
+        "df[\"score\"] = df[\"score\"].astype(int)\n",
+        "df[\"num_comments\"] = df[\"num_comments\"].astype(int)\n",
+        "\n",
+        "# 4️⃣ Remove low-quality stories (score < 5)\n",
+        "df = df[df[\"score\"] >= 5]\n",
+        "\n",
+        "# 5️⃣ Remove extra whitespace in title\n",
+        "df[\"title\"] = df[\"title\"].str.strip()\n",
+        "\n",
+        "# Final result\n",
+        "print(\"After Cleaning:\", df.shape)\n",
+        "print(f\"Rows remaining after cleaning: {len(df)}\")"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "hgoEBwoQwWD4",
+        "outputId": "ade86112-9588-4c34-fda1-0c674c3f83fa"
+      },
+      "execution_count": 8,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Before Cleaning: (80, 7)\n",
+            "After Cleaning: (77, 7)\n",
+            "Rows remaining after cleaning: 77\n"
+          ]
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "colab": {
+      "provenance": [],
+      "authorship_tag": "ABX9TyPWfQVQxyYcQPoFcHCqaill",
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "display_name": "Python 3",
+      "name": "python3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 0
+}
